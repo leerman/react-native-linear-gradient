@@ -2,6 +2,8 @@ package com.BV.LinearGradient;
 
 import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.uimanager.PixelUtil;
+import com.facebook.react.uimanager.FloatUtil;
+import com.facebook.yoga.YogaConstants;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -11,8 +13,14 @@ import android.graphics.Path;
 import android.graphics.RectF;
 import android.graphics.Shader;
 import android.view.View;
+import javax.annotation.Nullable;
+
+import java.util.Arrays;
 
 public class LinearGradientView extends View {
+
+    private float mBorderRadius = YogaConstants.UNDEFINED;
+    private float[] mBorderCornerRadii = {YogaConstants.UNDEFINED, YogaConstants.UNDEFINED, YogaConstants.UNDEFINED, YogaConstants.UNDEFINED};
 
     private final Paint mPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Path mPathForBorderRadius;
@@ -27,7 +35,6 @@ public class LinearGradientView extends View {
     private float[] mAngleCenter = new float[]{0.5f, 0.5f};
     private float mAngle = 45f;
     private int[] mSize = {0, 0};
-    private float[] mBorderRadii = {0, 0, 0, 0, 0, 0, 0, 0};
 
 
     public LinearGradientView(Context context) {
@@ -79,15 +86,36 @@ public class LinearGradientView extends View {
         drawGradient();
     }
 
-    public void setBorderRadii(ReadableArray borderRadii) {
-        float[] _radii = new float[borderRadii.size()];
-        for (int i=0; i < _radii.length; i++)
-        {
-            _radii[i] = PixelUtil.toPixelFromDIP((float) borderRadii.getDouble(i));
+    public void setBorderRadius(float borderRadius) {
+        if (!FloatUtil.floatsEqual(mBorderRadius, borderRadius)) {
+            mBorderRadius = borderRadius;
         }
-        mBorderRadii = _radii;
         updatePath();
         drawGradient();
+    }
+
+    public void setBorderRadius(float borderRadius, int position) {
+        if (!FloatUtil.floatsEqual(mBorderCornerRadii[position], borderRadius)) {
+            mBorderCornerRadii[position] = borderRadius;
+        }
+        updatePath();
+        drawGradient();
+    }
+
+    private float[] getCornerRadii() {
+        float defaultBorderRadius = !YogaConstants.isUndefined(mBorderRadius) ? mBorderRadius : 0;
+        float [] compputedRadii = new float[mBorderCornerRadii.length * 2];
+
+        for (int i=0; i < mBorderCornerRadii.length; i++)
+        {
+            float cornerRadius = !YogaConstants.isUndefined(mBorderCornerRadii[i]) ? mBorderCornerRadii[i] : defaultBorderRadius;
+            float pixel = PixelUtil.toPixelFromDIP(cornerRadius);
+
+            compputedRadii[i * 2] = pixel;
+            compputedRadii[i * 2 + 1] = pixel;
+        }
+
+        return compputedRadii;
     }
 
     @Override
@@ -148,7 +176,7 @@ public class LinearGradientView extends View {
         mTempRectForBorderRadius.set(0f, 0f, (float) mSize[0], (float) mSize[1]);
         mPathForBorderRadius.addRoundRect(
             mTempRectForBorderRadius,
-            mBorderRadii,
+            getCornerRadii(),
             Path.Direction.CW);
     }
 
